@@ -1,0 +1,40 @@
+@import "tailwindcss";
+
+@layer utilities {
+  .pixelated {
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+  }
+  .font-pixel {
+    font-family: 'Press Start 2P', monospace;
+  }
+  .font-sans-ui {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .font-mono-code {
+    font-family: 'JetBrains Mono', monospace;
+  }
+}
+
+/* Habbo-style isometric grid shadow and crisp lines */
+.isometric-stage {
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+/* Custom retro scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.8);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.5);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(245, 158, 11, 0.8);
+}

@@ -12,6 +12,9 @@ import {
   TrendingUp,
   Activity,
   Zap,
+  Film,
+  ShieldCheck,
+  Cpu,
 } from 'lucide-react';
 import { sounds } from '../utils/sound';
 
@@ -20,6 +23,8 @@ interface HeaderNavProps {
   onOpenArticles: () => void;
   onOpenDonation: () => void;
   onOpenJournalTab: () => void;
+  onOpen3DShorts: () => void;
+  onOpenUnitTest: () => void;
   soundEnabled: boolean;
   onToggleSound: () => void;
   isAutonomousLive: boolean;
@@ -31,6 +36,8 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
   onOpenArticles,
   onOpenDonation,
   onOpenJournalTab,
+  onOpen3DShorts,
+  onOpenUnitTest,
   soundEnabled,
   onToggleSound,
   isAutonomousLive,
@@ -104,40 +111,74 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
         </div>
 
         {/* Right: Live Telemetry Metrics & Quick Actions */}
-        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+        <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
           {/* Revenue Pill */}
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-950/40 border border-emerald-500/30 text-emerald-300 text-xs shadow-sm">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-950/40 border border-emerald-500/30 text-emerald-300 text-xs shadow-sm">
             <Coins className="w-3.5 h-3.5 text-emerald-400" />
-            <span className="text-[10px] text-emerald-400/80 uppercase font-mono-code font-bold">
+            <span className="text-[10px] text-emerald-400/85 uppercase font-mono-code font-bold">
               Treasury:
             </span>
-            <span className="font-mono-code font-bold text-emerald-300 text-sm">
+            <span className="font-mono-code font-bold text-emerald-300 text-xs">
               ${stats.totalRevenue.toFixed(0)}
             </span>
           </div>
 
+          {/* Token Burn & Compute Cost Pill */}
+          <div
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cyan-950/40 border border-cyan-500/30 text-cyan-300 text-xs shadow-sm"
+            title="Total tokens burned by autonomous character interactions & 3D rendering"
+          >
+            <Cpu className="w-3.5 h-3.5 text-cyan-400" />
+            <span className="text-[10px] text-cyan-400/80 uppercase font-mono-code font-bold">
+              AI Burn:
+            </span>
+            <span className="font-mono-code font-bold text-cyan-300 text-xs">
+              ${stats.totalComputeCostUsd.toFixed(4)}
+            </span>
+          </div>
+
+          {/* 3D Shorts Division Button */}
+          <button
+            onClick={onOpen3DShorts}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-950/70 hover:bg-emerald-900/80 text-emerald-300 hover:text-emerald-100 border border-emerald-500/40 text-xs font-mono-code font-bold transition shadow-sm"
+            title="Open 3D Shorts Division (Gemini Omni Spatial Lab)"
+          >
+            <Film className="w-3.5 h-3.5 text-emerald-400" />
+            <span>3D Shorts</span>
+          </button>
+
           {/* Research Journal Button */}
           <button
             onClick={onOpenJournalTab}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-950/70 hover:bg-indigo-900/80 text-indigo-300 hover:text-indigo-100 border border-indigo-500/40 text-xs font-mono-code font-bold transition shadow-sm"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-950/70 hover:bg-indigo-900/80 text-indigo-300 hover:text-indigo-100 border border-indigo-500/40 text-xs font-mono-code font-bold transition shadow-sm"
           >
             <BookOpen className="w-3.5 h-3.5 text-indigo-400" />
-            <span>Meridian Journal</span>
+            <span>Journal</span>
+          </button>
+
+          {/* Unit Test Suite Button */}
+          <button
+            onClick={onOpenUnitTest}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700 text-xs font-mono-code font-bold transition shadow-sm"
+            title="Run Extensive Moon Plaza Unit Test Suite"
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Tests</span>
           </button>
 
           {/* Donate / Tip Lucas Modal */}
           <button
             onClick={onOpenDonation}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 text-xs font-bold shadow-lg shadow-amber-500/20 transition active:scale-95 font-mono-code"
+            className="flex items-center gap-1 px-3 py-1 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 text-xs font-bold shadow-lg shadow-amber-500/20 transition active:scale-95 font-mono-code"
           >
             <DollarSign className="w-3.5 h-3.5 text-slate-950" />
-            <span>Tip (lk3mpe / lkempe)</span>
+            <span>Tip</span>
           </button>
 
           {/* Sound Synthesizer Toggle */}
           <button
             onClick={onToggleSound}
-            className="p-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-800 transition"
+            className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-800 transition"
             title={soundEnabled ? 'Mute 8-bit Audio' : 'Enable 8-bit Audio'}
           >
             {soundEnabled ? (

@@ -8,6 +8,7 @@ import {
   MeridianArticle,
   MeridianJournalEntry,
   CompanyStats,
+  ThreeDShortScene,
 } from './types';
 import {
   INITIAL_CHARACTERS,
@@ -17,6 +18,7 @@ import {
   MERIDIAN_ARTICLES,
   INITIAL_JOURNAL_ENTRIES,
   INITIAL_COMPANY_STATS,
+  INITIAL_3D_SHORTS,
   AUTONOMOUS_BANTER_LIST,
 } from './data/initialData';
 import { HeaderNav } from './components/HeaderNav';
@@ -28,6 +30,8 @@ import { CompanyChatBox } from './components/CompanyChatBox';
 import { MeridianArticlesModal } from './components/MeridianArticlesModal';
 import { DonationModal } from './components/DonationModal';
 import { MeridianJournalPipeline } from './components/MeridianJournalPipeline';
+import { ThreeDShortsModal } from './components/ThreeDShortsModal';
+import { UnitTestModal } from './components/UnitTestModal';
 import { sounds } from './utils/sound';
 import { getDirection } from './utils/isometric';
 import confetti from 'canvas-confetti';
@@ -46,6 +50,10 @@ import {
   Play,
   Pause,
   PlusCircle,
+  Film,
+  ShieldCheck,
+  Cpu,
+  Flame,
 } from 'lucide-react';
 
 export default function App() {
@@ -87,9 +95,15 @@ export default function App() {
   ]);
 
   const [companyStats, setCompanyStats] = useState<CompanyStats>(INITIAL_COMPANY_STATS);
+  const [threeDShorts, setThreeDShorts] = useState<ThreeDShortScene[]>(INITIAL_3D_SHORTS);
   const [isBrainstorming, setIsBrainstorming] = useState(false);
   const [isArticlesOpen, setIsArticlesOpen] = useState(false);
   const [isDonationOpen, setIsDonationOpen] = useState(false);
+  const [is3DShortsOpen, setIs3DShortsOpen] = useState(false);
+  const [isUnitTestOpen, setIsUnitTestOpen] = useState(false);
+  const [isGeneratingShort, setIsGeneratingShort] = useState(false);
+  const [isInteractingPeers, setIsInteractingPeers] = useState(false);
+  const [peerInteractionCount, setPeerInteractionCount] = useState(0);
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [activeTab, setActiveTab] = useState<
@@ -811,6 +825,282 @@ export default function App() {
     });
   };
 
+  // 13. Autonomous Peer-to-Peer Interaction & Token Budget Deduction
+  const handleTriggerPeerInteraction = async () => {
+    if (isInteractingPeers) return;
+    setIsInteractingPeers(true);
+
+    // Pick pairs that generate high synergy: Banner Sentinel, LinkedIn Visionary, Gemini Omni, Maya, Tango
+    const synergyPairs = [
+      { c1: 'banner_sentinel', c2: 'linkedin_companion' },
+      { c1: 'gemini_omni_3d', c2: 'banner_sentinel' },
+      { c1: 'linkedin_companion', c2: 'maya' },
+      { c1: 'banner_sentinel', c2: 'tango' },
+      { c1: 'gemini_omni_3d', c2: 'linkedin_companion' },
+    ];
+    const pair = synergyPairs[Math.floor(Math.random() * synergyPairs.length)];
+    const char1 = characters.find((c) => c.id === pair.c1);
+    const char2 = characters.find((c) => c.id === pair.c2);
+
+    sounds.playBubblePop();
+
+    try {
+      const res = await fetch('/api/company/peer-interaction', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          char1Id: pair.c1,
+          char2Id: pair.c2,
+          currentTreasury: companyStats.totalRevenue,
+          interactionCount: peerInteractionCount + 1,
+        }),
+      });
+
+      const data = await res.json();
+      const tokensBurned = data.tokensBurned || 1500;
+      const tokenCostUsd = data.tokenCostUsd || 0.0009;
+
+      // 1. Deduct token budget from both characters & record compute cost
+      const halfBurn = Math.round(tokensBurned / 2);
+      setCharacters((prev) =>
+        prev.map((c) => {
+          if (c.id === pair.c1 || c.id === pair.c2) {
+            const currentProfile = c.tokenProfile || {
+              tokenBudget: 50000,
+              tokensConsumed: 0,
+              computeCostUsd: 0,
+              revenueAttributedUsd: 0,
+            };
+            return {
+              ...c,
+              tokenProfile: {
+                ...currentProfile,
+                tokensConsumed: currentProfile.tokensConsumed + halfBurn,
+                computeCostUsd: Number((currentProfile.computeCostUsd + tokenCostUsd / 2).toFixed(6)),
+              },
+            };
+          }
+          return c;
+        })
+      );
+
+      // 2. Deduct company treasury & update compute accounting
+      setCompanyStats((prev) => ({
+        ...prev,
+        totalTokensBurned: prev.totalTokensBurned + tokensBurned,
+        totalComputeCostUsd: Number((prev.totalComputeCostUsd + tokenCostUsd).toFixed(6)),
+        netProfitUsd: Number((prev.totalRevenue - (prev.totalComputeCostUsd + tokenCostUsd)).toFixed(5)),
+      }));
+
+      // 3. Sequential speech bubbles
+      const dlg = data.dialogue || {
+        speaker1Text: `${char1?.name}: Analyzing conversion metrics with Temp 0.7...`,
+        speaker2Text: `${char2?.name}: Concurred! Routing patron traffic to PayPal & MercadoPago.`,
+        creativeConcept: 'Autonomous dynamic micro-patronage threshold',
+      };
+
+      // Speaker 1 talks
+      setCharacters((prev) =>
+        prev.map((c) =>
+          c.id === pair.c1
+            ? {
+                ...c,
+                action: 'talk',
+                currentBubble: {
+                  id: `bubble-peer1-${Date.now()}`,
+                  text: dlg.speaker1Text,
+                  role: c.role,
+                  timestamp: Date.now(),
+                  expiresAt: Date.now() + 6500,
+                },
+              }
+            : c
+        )
+      );
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `msg-peer1-${Date.now()}`,
+          senderId: pair.c1,
+          senderName: char1?.name || 'Teammate 1',
+          senderRole: char1?.role || 'Staff',
+          text: dlg.speaker1Text,
+          timestamp: Date.now(),
+          type: 'discussion',
+        },
+      ]);
+
+      // Speaker 2 responds after 1.8s
+      setTimeout(() => {
+        sounds.playBubblePop();
+        setCharacters((prev) =>
+          prev.map((c) =>
+            c.id === pair.c2
+              ? {
+                  ...c,
+                  action: pair.c2 === 'tango' ? 'cheer' : 'talk',
+                  currentBubble: {
+                    id: `bubble-peer2-${Date.now()}`,
+                    text: dlg.speaker2Text,
+                    role: c.role,
+                    timestamp: Date.now(),
+                    expiresAt: Date.now() + 6500,
+                  },
+                }
+              : c
+          )
+        );
+
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `msg-peer2-${Date.now()}`,
+            senderId: pair.c2,
+            senderName: char2?.name || 'Teammate 2',
+            senderRole: char2?.role || 'Staff',
+            text: dlg.speaker2Text,
+            timestamp: Date.now(),
+            type: 'discussion',
+          },
+        ]);
+      }, 1800);
+
+      // 4. Threshold Check (e.g., after 6 interactions, spawn a creative experiment!)
+      const nextCount = peerInteractionCount + 1;
+      const threshold = companyStats.geminiParams.interactionBurstThreshold;
+      if (nextCount >= threshold) {
+        setPeerInteractionCount(0);
+        setTimeout(() => {
+          sounds.playDeployChime();
+          confetti({
+            particleCount: 70,
+            spread: 70,
+            origin: { y: 0.6 },
+            colors: ['#38BDF8', '#C084FC', '#10B981'],
+          });
+
+          // Banner Sentinel or Gemini Omni automatically generates an autonomous experiment!
+          const autoExpId = `exp-peer-${Date.now()}`;
+          const newExp: Experiment = {
+            id: autoExpId,
+            title: `Peer Synergy: ${dlg.creativeConcept || 'Dynamic Patron Funnel'}`,
+            description: `Auto-conceived by ${char1?.name} & ${char2?.name} after ${threshold} collaborative brainstorming cycles.`,
+            category: 'donation_banner',
+            hypothesis: `Combining Banner Sentinel pixel positioning with 2035 futuristic copy lifts conversion above 4.5%.`,
+            targetConversionRate: 4.5,
+            currentConversionRate: 0.0,
+            impressions: 0,
+            clicks: 0,
+            conversions: 0,
+            revenueEarned: 0,
+            branch: `experiment/synergy-${Date.now().toString().slice(-4)}`,
+            commitSha: Math.random().toString(16).substring(2, 9),
+            commitMessage: `feat(synergy): autonomous deploy generated by ${char1?.name} & ${char2?.name}`,
+            codeDiffPreview: `+ // Autonomous Peer Collab Code`,
+            status: 'live',
+            createdAt: Date.now(),
+            deployedAt: Date.now(),
+            bannerHeadline: 'Direct Patronage: Power Autonomous Research',
+            bannerSubtext: 'Every dollar goes directly to ask-meridian.uk open papers & Moon Plaza treasury.',
+            suggestedAmounts: [10, 25, 50, 100],
+            paymentConfig: {
+              paypalUrl: 'https://paypal.me/lk3mpe',
+              mercadopagoAlias: 'lkempe',
+            },
+          };
+
+          setExperiments((prev) => [newExp, ...prev]);
+          setCompanyStats((prev) => ({
+            ...prev,
+            activeExperimentsCount: prev.activeExperimentsCount + 1,
+            gitCommitsCount: prev.gitCommitsCount + 1,
+          }));
+        }, 3200);
+      } else {
+        setPeerInteractionCount(nextCount);
+      }
+    } catch (err) {
+      console.error('Peer interaction error:', err);
+    } finally {
+      setIsInteractingPeers(false);
+    }
+  };
+
+  // 14. Generate 3D Short Scene via Gemini Omni
+  const handleGenerateNewShort = async (platform: string) => {
+    setIsGeneratingShort(true);
+    sounds.playBubblePop();
+
+    try {
+      const res = await fetch('/api/company/generate-3d-short', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          platform,
+          topic: 'Autonomous AI mascot managing real treasury with PayPal lk3mpe and MercadoPago lkempe',
+        }),
+      });
+
+      const data = await res.json();
+      if (data.shortScene) {
+        setThreeDShorts((prev) => [data.shortScene, ...prev]);
+
+        // Deduct compute cost from gemini_omni_3d character profile
+        setCharacters((prev) =>
+          prev.map((c) => {
+            if (c.id === 'gemini_omni_3d') {
+              const cp = c.tokenProfile || {
+                tokenBudget: 100000,
+                tokensConsumed: 0,
+                computeCostUsd: 0,
+                revenueAttributedUsd: 0,
+              };
+              return {
+                ...c,
+                action: 'type',
+                currentBubble: {
+                  id: `short-rendered-${Date.now()}`,
+                  text: `Rendered 3D spatial scene for ${platform}! Burned ${data.tokensBurned} tokens ($${data.tokenCostUsd} USD).`,
+                  role: c.role,
+                  timestamp: Date.now(),
+                  expiresAt: Date.now() + 6500,
+                },
+                tokenProfile: {
+                  ...cp,
+                  tokensConsumed: cp.tokensConsumed + data.tokensBurned,
+                  computeCostUsd: Number((cp.computeCostUsd + data.tokenCostUsd).toFixed(6)),
+                },
+              };
+            }
+            return c;
+          })
+        );
+
+        // Update company compute stats
+        setCompanyStats((prev) => ({
+          ...prev,
+          totalTokensBurned: prev.totalTokensBurned + data.tokensBurned,
+          totalComputeCostUsd: Number((prev.totalComputeCostUsd + data.tokenCostUsd).toFixed(6)),
+          netProfitUsd: Number((prev.totalRevenue - (prev.totalComputeCostUsd + data.tokenCostUsd)).toFixed(5)),
+          total3DShortsRendered: prev.total3DShortsRendered + 1,
+        }));
+
+        sounds.playDeployChime();
+        confetti({
+          particleCount: 50,
+          spread: 60,
+          origin: { y: 0.7 },
+          colors: ['#10B981', '#34D399', '#6EE7B7'],
+        });
+      }
+    } catch (err) {
+      console.error('Error generating 3D short:', err);
+    } finally {
+      setIsGeneratingShort(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-amber-500 selection:text-slate-950">
       {/* Top Header Navigation */}
@@ -819,6 +1109,8 @@ export default function App() {
         onOpenArticles={() => setIsArticlesOpen(true)}
         onOpenDonation={() => setIsDonationOpen(true)}
         onOpenJournalTab={() => setActiveTab('journal')}
+        onOpen3DShorts={() => setIs3DShortsOpen(true)}
+        onOpenUnitTest={() => setIsUnitTestOpen(true)}
         soundEnabled={soundEnabled}
         onToggleSound={() => {
           sounds.enabled = !soundEnabled;
@@ -832,7 +1124,7 @@ export default function App() {
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 lg:p-6 space-y-5">
         {/* Live Simulation Control Ticker & Action Bar */}
         <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-2.5 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="font-mono-code font-bold text-slate-300 flex items-center gap-1.5">
               <Activity className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
               HQ Simulation Controls:
@@ -867,9 +1159,40 @@ export default function App() {
               <TrendingUp className="w-3 h-3" />
               <span>Live Traffic: {isAutonomousTraffic ? 'PULSING (3.8s)' : 'PAUSED'}</span>
             </button>
+
+            {/* Creative Peer Interaction Burst (Burn Tokens & Trigger Synergy) */}
+            <button
+              onClick={handleTriggerPeerInteraction}
+              disabled={isInteractingPeers}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-purple-950/60 hover:bg-purple-900/80 text-purple-300 hover:text-purple-100 border border-purple-500/40 text-[11px] font-mono-code font-bold transition disabled:opacity-50"
+              title="Trigger real-time banter between Banner Sentinel, LinkedIn Companion, and Gemini Omni (Temperature 0.7, Top P 0.95, Max 500k)"
+            >
+              <Cpu className={`w-3 h-3 text-purple-400 ${isInteractingPeers ? 'animate-spin' : ''}`} />
+              <span>
+                {isInteractingPeers
+                  ? 'Interacting...'
+                  : `Peer Collab (${peerInteractionCount}/${companyStats.geminiParams.interactionBurstThreshold})`}
+              </span>
+            </button>
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={() => setIs3DShortsOpen(true)}
+              className="px-2.5 py-1 rounded-md bg-emerald-950/70 hover:bg-emerald-900/80 text-emerald-300 border border-emerald-500/40 text-[11px] font-mono-code transition font-bold flex items-center gap-1"
+            >
+              <Film className="w-3 h-3" />
+              <span>3D Shorts Lab</span>
+            </button>
+
+            <button
+              onClick={() => setIsUnitTestOpen(true)}
+              className="px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[11px] font-mono-code transition font-bold flex items-center gap-1"
+            >
+              <ShieldCheck className="w-3 h-3 text-emerald-400" />
+              <span>Run Tests</span>
+            </button>
+
             <button
               onClick={() => {
                 if (experiments[0]) handleSimulateTraffic(experiments[0].id, 100, 0.1);
@@ -884,14 +1207,14 @@ export default function App() {
               className="px-2.5 py-1 rounded-md bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[11px] font-mono-code transition flex items-center gap-1"
             >
               <Coffee className="w-3 h-3" />
-              <span>Espresso Boost</span>
+              <span>Espresso</span>
             </button>
 
             <button
               onClick={() => handleDonationSuccess(25, 'Autonomous Test Patron')}
               className="px-2.5 py-1 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-mono-code font-bold transition shadow"
             >
-              +$25 Tip Test
+              +$25 Tip
             </button>
           </div>
         </div>
@@ -1121,6 +1444,26 @@ export default function App() {
         isOpen={isDonationOpen}
         onClose={() => setIsDonationOpen(false)}
         onDonationSuccess={handleDonationSuccess}
+      />
+
+      {/* 3D Shorts Spatial Production Modal (Gemini Omni API) */}
+      <ThreeDShortsModal
+        isOpen={is3DShortsOpen}
+        onClose={() => setIs3DShortsOpen(false)}
+        shorts={threeDShorts}
+        onGenerateNewShort={handleGenerateNewShort}
+        isGenerating={isGeneratingShort}
+        stats={companyStats}
+      />
+
+      {/* Extensive Moon Plaza Unit Test Suite Modal */}
+      <UnitTestModal
+        isOpen={isUnitTestOpen}
+        onClose={() => setIsUnitTestOpen(false)}
+        characters={characters}
+        experiments={experiments}
+        companyStats={companyStats}
+        threeDShorts={threeDShorts}
       />
     </div>
   );
